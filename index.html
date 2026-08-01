@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#101526">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Almanac">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23101526'/%3E%3Cpath d='M28 118 A62 62 0 0 1 152 118' fill='none' stroke='%23E8A33D' stroke-width='7' stroke-linecap='round'/%3E%3Cline x1='20' y1='118' x2='160' y2='118' stroke='%23E9E4D8' stroke-width='5' stroke-linecap='round' opacity='.5'/%3E%3Ccircle cx='90' cy='56' r='13' fill='%23E8A33D'/%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Almanac%22%2C%22short_name%22%3A%22Almanac%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23101526%22%2C%22theme_color%22%3A%22%23101526%22%2C%22start_url%22%3A%22.%22%7D">
+<title>Almanac</title>
+<style>
+  :root{
+    --ink:#101526;
+    --ink-2:#151B30;
+    --slate:#1A2138;
+    --slate-2:#222A44;
+    --rule:#2A3350;
+    --rule-soft:#212942;
+    --parch:#E9E4D8;
+    --parch-dim:#9A9784;
+    --parch-faint:#6C6E76;
+    --amber:#E8A33D;
+    --verd:#58B0A6;
+    --lilac:#A88CD0;
+    --indigo:#6B84C8;
+    --sage:#7FA867;
+    --serif: "Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{background:var(--ink)}
+  body{
+    margin:0;min-height:100vh;
+    background:
+      radial-gradient(900px 420px at 50% -10%, rgba(232,163,61,.06), transparent 60%),
+      var(--ink);
+    color:var(--parch);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:30px 16px 46px}
+
+  /* ---------- masthead ---------- */
+  .masthead{text-align:center;padding-bottom:20px;border-bottom:1px solid var(--rule);margin-bottom:22px}
+  .rule-label{
+    font-family:var(--sans);font-size:9.5px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--parch-faint);font-weight:600;
+  }
+  h1{
+    font-family:var(--serif);font-size:40px;font-weight:400;letter-spacing:.02em;
+    margin:8px 0 6px;color:var(--parch);
+  }
+  .masthead .date{font-family:var(--serif);font-size:14.5px;color:var(--parch-dim);font-style:italic}
+
+  /* ---------- sections ---------- */
+  section{margin-bottom:30px}
+  .sec-head{
+    display:flex;align-items:center;gap:12px;margin-bottom:18px;
+  }
+  .sec-head h2{
+    font-family:var(--sans);font-size:10px;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--parch-faint);font-weight:700;margin:0;white-space:nowrap;
+  }
+  .sec-head .hair{flex:1;height:1px;background:var(--rule)}
+
+  /* ---------- date nav ---------- */
+  .datenav{display:flex;align-items:center;gap:6px;margin-bottom:20px}
+  .nav{
+    width:40px;height:40px;flex-shrink:0;border-radius:2px;
+    border:1px solid var(--rule);background:transparent;color:var(--parch);
+    font-family:var(--serif);font-size:19px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s;
+  }
+  .nav:hover{border-color:var(--parch-dim)}
+  .nav:active{background:var(--slate-2)}
+  .nav:disabled{opacity:.22;cursor:default}
+  #datePicker{
+    flex:1;min-width:0;height:40px;background:transparent;border:1px solid var(--rule);
+    border-radius:2px;color:var(--parch);font-family:var(--serif);font-size:15.5px;
+    padding:0 10px;color-scheme:dark;text-align:center;font-variant-numeric:tabular-nums;
+  }
+  .todaybtn{
+    height:40px;flex-shrink:0;padding:0 14px;border-radius:2px;border:1px solid var(--rule);
+    background:transparent;color:var(--parch-dim);font-family:var(--sans);
+    font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;cursor:pointer;
+  }
+  .todaybtn:active{background:var(--slate-2)}
+
+  /* ---------- sun dome (signature) ---------- */
+  .dome{
+    display:flex;align-items:flex-end;gap:16px;
+    padding:14px 4px 12px;border-bottom:1px solid var(--rule-soft);margin-bottom:22px;
+  }
+  .dome svg{width:112px;height:60px;flex-shrink:0;overflow:visible}
+  .dome-read{padding-bottom:2px}
+  .dome-num{
+    font-family:var(--serif);font-size:26px;line-height:1;color:var(--parch);
+    font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+  }
+  .dome-num em{font-size:15px;font-style:normal;color:var(--parch-dim);margin-left:1px}
+  .dome-cap{
+    font-family:var(--sans);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--parch-faint);font-weight:600;margin-top:7px;
+  }
+
+  .backfill-hint{
+    display:none;font-family:var(--serif);font-size:14px;font-style:italic;color:var(--amber);
+    border-left:2px solid var(--amber);padding:2px 0 2px 14px;margin-bottom:22px;line-height:1.5;
+  }
+  .backfill-hint.show{display:block}
+
+  /* ---------- gauges ---------- */
+  .gauge{margin-bottom:24px}
+  .gauge:last-of-type{margin-bottom:8px}
+  .g-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+  .g-label{
+    font-family:var(--sans);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    font-weight:700;display:flex;align-items:center;gap:9px;color:var(--parch-dim);
+  }
+  .tick-dot{width:6px;height:6px;border-radius:50%;display:inline-block;transition:background .18s ease}
+  .g-val{font-family:var(--serif);font-size:23px;line-height:1;font-variant-numeric:tabular-nums;min-width:2ch;text-align:right;transition:color .18s ease}
+  .track-wrap{position:relative;height:30px;display:flex;align-items:center}
+  .track-bg{position:absolute;left:0;right:0;height:2px;background:var(--rule);pointer-events:none}
+  .track-fill{position:absolute;left:0;height:2px;pointer-events:none;transition:width .1s linear,background .18s ease}
+  .ticks{position:absolute;left:0;right:0;top:19px;display:flex;justify-content:space-between;pointer-events:none}
+  .ticks i{width:1px;height:5px;background:var(--rule);display:block}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;position:relative;
+    width:100%;height:30px;margin:0;background:transparent;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{height:2px;background:transparent}
+  input[type=range]::-moz-range-track{height:2px;background:transparent}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;
+    background:var(--ink);border:2.5px solid var(--thumb,#fff);margin-top:-6.5px;
+    box-shadow:0 0 0 3px var(--ink);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px;height:13px;border-radius:50%;
+    background:var(--ink);border:2.5px solid var(--thumb,#fff);box-shadow:0 0 0 3px var(--ink);
+  }
+  .g-hint{
+    font-family:var(--serif);font-size:11.5px;font-style:italic;color:var(--parch-faint);
+    margin-top:9px;display:flex;justify-content:space-between;
+  }
+
+  /* ---------- notes + save ---------- */
+  .notes-label{
+    font-family:var(--sans);font-size:10px;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--parch-faint);margin:24px 0 9px;font-weight:700;
+  }
+  textarea{
+    width:100%;background:transparent;border:1px solid var(--rule);border-radius:2px;
+    color:var(--parch);font-family:var(--serif);font-size:15.5px;padding:12px;
+    resize:none;min-height:66px;line-height:1.5;
+  }
+  textarea::placeholder{color:var(--parch-faint);font-style:italic}
+  textarea:focus{outline:none;border-color:var(--parch-dim)}
+
+  .save{
+    width:100%;margin-top:18px;padding:15px;background:var(--amber);color:#171106;
+    font-family:var(--sans);font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+    font-weight:800;border:none;border-radius:2px;cursor:pointer;transition:opacity .15s;
+  }
+  .save:active{opacity:.82}
+  .save.saved{background:var(--verd);color:#08201D}
+
+  /* ---------- chart ---------- */
+  .legend{display:flex;gap:14px;font-family:var(--sans);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--parch-faint);font-weight:600}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .legend i{width:14px;height:2px;display:inline-block}
+  svg.chart{width:100%;height:158px;display:block;overflow:visible}
+  .empty{
+    font-family:var(--serif);color:var(--parch-dim);font-size:14.5px;text-align:center;
+    padding:26px 12px;line-height:1.65;font-style:italic;
+  }
+  .empty b{
+    display:block;font-family:var(--sans);font-style:normal;font-size:10px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--parch-faint);margin-bottom:9px;font-weight:700;
+  }
+
+  /* ---------- ledger ---------- */
+  table.ledger{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  table.ledger th{
+    font-family:var(--sans);font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--parch-faint);font-weight:700;padding:0 0 9px;text-align:center;
+  }
+  table.ledger th:first-child{text-align:left}
+  table.ledger td{
+    padding:9px 0;border-top:1px solid var(--rule-soft);font-family:var(--serif);
+    font-size:14.5px;text-align:center;color:var(--parch);
+  }
+  table.ledger td.d{text-align:left;color:var(--parch-dim);font-size:13px;white-space:nowrap}
+  table.ledger td.d s{text-decoration:none;color:var(--amber);font-size:9px;vertical-align:middle;margin-left:4px}
+
+  /* ---------- footer ---------- */
+  .actions{display:flex;gap:10px}
+  .btn{
+    flex:1;padding:13px;background:transparent;color:var(--parch-dim);border:1px solid var(--rule);
+    border-radius:2px;font-family:var(--sans);font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;font-weight:700;cursor:pointer;
+  }
+  .btn:active{background:var(--slate-2)}
+  .meta{
+    text-align:center;color:var(--parch-faint);font-family:var(--serif);font-style:italic;
+    font-size:12.5px;margin-top:20px;line-height:1.7;
+  }
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(14px);
+    background:var(--parch);color:var(--ink);padding:11px 22px;border-radius:2px;
+    font-family:var(--sans);font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;
+    opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  input[type=file]{display:none}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div class="rule-label">Daily reading</div>
+    <h1>Almanac</h1>
+    <div class="date" id="today"></div>
+  </div>
+
+  <section>
+    <div class="sec-head"><h2 id="checkin-title">Today</h2><span class="hair"></span></div>
+    <div class="datenav">
+      <button class="nav" id="prevDay" aria-label="Previous day">&lsaquo;</button>
+      <input type="date" id="datePicker">
+      <button class="nav" id="nextDay" aria-label="Next day">&rsaquo;</button>
+      <button class="todaybtn" id="todayBtn">Today</button>
+    </div>
+
+    <div class="dome">
+      <svg id="domeSvg" viewBox="0 0 112 60" aria-hidden="true"></svg>
+      <div class="dome-read">
+        <div class="dome-num" id="domeNum">—</div>
+        <div class="dome-cap">Daylight</div>
+      </div>
+    </div>
+
+    <div class="backfill-hint" id="backfillHint">Filling in a past day from memory. Marked as backfilled so you can tell it apart later.</div>
+    <div id="gauges"></div>
+    <div class="notes-label">Notes</div>
+    <textarea id="notes" placeholder="exercise, how you slept, anything worth marking…"></textarea>
+    <button class="save" id="save">Save today</button>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Rhythm</h2><span class="hair"></span>
+      <div class="legend">
+        <span><i style="background:var(--amber)"></i>Energy</span>
+        <span><i style="background:var(--verd)"></i>Mood</span>
+      </div>
+    </div>
+    <div id="curve"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Ledger</h2><span class="hair"></span></div>
+    <div id="loglist"></div>
+  </section>
+
+  <div class="actions">
+    <button class="btn" id="export">Export CSV</button>
+    <button class="btn" id="importBtn">Import</button>
+    <input type="file" id="importFile" accept=".csv,text/csv">
+  </div>
+  <div class="meta" id="meta"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- your latitude (Victoria, BC). Change this one number if you move. ----
+  var LAT = 48.43;
+
+  var STORE_KEY = "almanac-log-v1";
+  // h = hue; saturation and lightness ramp from the 1-end to the 10-end of each scale,
+  // so a low reading sits dim and washed toward the ink, a high one sits full and bright.
+  var METRICS = [
+    { key:"energy",    label:"Energy",    css:"var(--amber)",  hex:"#E8A33D",
+      h:36,  sLo:18, sHi:82, lLo:31, lHi:62 },
+    { key:"mood",      label:"Mood",      css:"var(--verd)",   hex:"#58B0A6",
+      h:173, sLo:11, sHi:46, lLo:29, lHi:58 },
+    { key:"happiness", label:"Happiness", css:"var(--lilac)",  hex:"#A88CD0",
+      h:267, sLo:14, sHi:52, lLo:33, lHi:72 },
+    { key:"sleep",     label:"Sleep",     css:"var(--indigo)", hex:"#6B84C8",
+      h:223, sLo:14, sHi:56, lLo:31, lHi:66 },
+    { key:"food",      label:"Eating",    css:"var(--sage)",   hex:"#7FA867",
+      h:99,  sLo:10, sHi:38, lLo:28, lHi:58,
+      loHint:"barely ate", hiHint:"ate a lot" }
+  ];
+  var METRIC_BY_KEY = {};
+  METRICS.forEach(function(m){ METRIC_BY_KEY[m.key]=m; });
+
+  // value 1-10 -> colour along that metric's dim/bright ramp
+  function metricColor(m, v){
+    if(v==null) return "var(--parch-faint)";
+    var t=(Math.max(1,Math.min(10,v))-1)/9;
+    var s=m.sLo+(m.sHi-m.sLo)*t;
+    var l=m.lLo+(m.lHi-m.lLo)*t;
+    return "hsl("+m.h+","+s.toFixed(1)+"%,"+l.toFixed(1)+"%)";
+  }
+
+  function load(){ try{var r=localStorage.getItem(STORE_KEY);return r?JSON.parse(r):{};}catch(e){return {};} }
+  function persist(d){ try{localStorage.setItem(STORE_KEY,JSON.stringify(d));return true;}catch(e){return false;} }
+  var data = load();
+
+  function isoDate(d){
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function prettyDate(iso){
+    var p=iso.split("-"), d=new Date(p[0],p[1]-1,p[2]);
+    return d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  }
+  function shortDate(iso){ var p=iso.split("-"); return p[1]+"/"+p[2]; }
+  function shiftDay(iso,delta){
+    var p=iso.split("-"), d=new Date(p[0],p[1]-1,p[2]); d.setDate(d.getDate()+delta); return isoDate(d);
+  }
+  function todayIso(){ return isoDate(new Date()); }
+
+  // ---- daylight from date + latitude ----
+  function daylightHours(iso){
+    var p=iso.split("-");
+    var N=Math.floor((Date.UTC(+p[0],+p[1]-1,+p[2])-Date.UTC(+p[0],0,0))/86400000);
+    var lat=LAT*Math.PI/180;
+    var decl=0.4093*Math.sin(2*Math.PI/365*(N-81));
+    var cosH=-Math.tan(lat)*Math.tan(decl);
+    if(cosH>=1) return 0;
+    if(cosH<=-1) return 24;
+    return (2*Math.acos(cosH)*180/Math.PI)/15;
+  }
+  function fmtDaylight(h){
+    var hrs=Math.floor(h), m=Math.round((h-hrs)*60);
+    if(m===60){hrs++;m=0;}
+    return hrs+'<em>h</em> '+String(m).padStart(2,"0")+'<em>m</em>';
+  }
+
+  // ---- sun dome ----
+  var CX=56, CY=48, R=40;
+  function domePt(t){
+    var a=t*Math.PI/180;
+    return [ (CX-R*Math.cos(a)).toFixed(2), (CY-R*Math.sin(a)).toFixed(2) ];
+  }
+  function drawDome(h){
+    var f=Math.max(0,Math.min(1,h/24));
+    var t1=90-90*f, t2=90+90*f;
+    var a=domePt(t1), b=domePt(t2), full0=domePt(0), full180=domePt(180);
+    var sun=domePt(90);
+    var lit = f>0.001
+      ? '<path d="M'+a[0]+','+a[1]+' A'+R+','+R+' 0 0 1 '+b[0]+','+b[1]+'" fill="none" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round"/>'
+      : '';
+    document.getElementById("domeSvg").innerHTML =
+      '<path d="M'+full0[0]+','+full0[1]+' A'+R+','+R+' 0 0 1 '+full180[0]+','+full180[1]+'" fill="none" stroke="#2A3350" stroke-width="1" stroke-dasharray="2 4"/>'+
+      lit+
+      '<line x1="4" y1="'+CY+'" x2="108" y2="'+CY+'" stroke="#4A4E5E" stroke-width="1"/>'+
+      '<circle cx="'+sun[0]+'" cy="'+sun[1]+'" r="4.6" fill="#E8A33D"/>';
+  }
+
+  var selectedDate = todayIso();
+  document.getElementById("today").textContent = prettyDate(todayIso());
+
+  // ---- gauges ----
+  var gaugesEl=document.getElementById("gauges"), inputs={}, painters={};
+  var tickHtml='<span class="ticks">'+new Array(11).join('<i></i>')+'<i></i></span>';
+  METRICS.forEach(function(m){
+    var row=document.createElement("div");
+    row.className="gauge";
+    var hint=m.loHint?'<div class="g-hint"><span>'+m.loHint+'</span><span>'+m.hiHint+'</span></div>':'';
+    row.innerHTML=
+      '<div class="g-head">'+
+        '<span class="g-label"><span class="tick-dot"></span>'+m.label+'</span>'+
+        '<span class="g-val">5</span>'+
+      '</div>'+
+      '<div class="track-wrap">'+
+        '<span class="track-bg"></span>'+
+        '<span class="track-fill" style="width:44%"></span>'+
+        tickHtml+
+        '<input type="range" min="1" max="10" step="1" value="5">'+
+      '</div>'+hint;
+    gaugesEl.appendChild(row);
+    var input=row.querySelector("input"),
+        val=row.querySelector(".g-val"),
+        fill=row.querySelector(".track-fill"),
+        dot=row.querySelector(".tick-dot"),
+        wrap=row.querySelector(".track-wrap");
+    inputs[m.key]=input;
+    function paint(){
+      var v=parseInt(input.value,10), c=metricColor(m,v);
+      val.textContent=v;
+      val.style.color=c;
+      dot.style.background=c;
+      fill.style.background=c;
+      fill.style.width=((v-1)/9*100).toFixed(1)+"%";
+      wrap.style.setProperty("--thumb",c);
+      input.style.setProperty("--thumb",c);
+    }
+    painters[m.key]=paint;
+    input.addEventListener("input",paint);
+    paint();
+  });
+  var notesEl=document.getElementById("notes");
+
+  function setForm(entry){
+    METRICS.forEach(function(m){
+      var v=entry&&entry[m.key]!=null?entry[m.key]:5;
+      inputs[m.key].value=v;
+      painters[m.key]();
+    });
+    notesEl.value=entry&&entry.notes?entry.notes:"";
+  }
+
+  // ---- date nav ----
+  var datePicker=document.getElementById("datePicker");
+  var prevBtn=document.getElementById("prevDay"), nextBtn=document.getElementById("nextDay");
+  var todayBtn=document.getElementById("todayBtn"), hintEl=document.getElementById("backfillHint");
+  var titleEl=document.getElementById("checkin-title"), saveBtn=document.getElementById("save");
+
+  function selectDate(iso){
+    if(iso>todayIso()) iso=todayIso();
+    selectedDate=iso; datePicker.max=todayIso(); datePicker.value=iso;
+    setForm(data[iso]); updateChrome();
+  }
+  function updateChrome(){
+    var isToday=selectedDate===todayIso(), logged=!!data[selectedDate];
+    nextBtn.disabled=isToday;
+    hintEl.classList.toggle("show",!isToday&&!logged);
+    var dh=daylightHours(selectedDate);
+    document.getElementById("domeNum").innerHTML=fmtDaylight(dh);
+    drawDome(dh);
+    if(isToday){
+      titleEl.textContent=logged?"Today \u00b7 logged":"Today";
+      saveBtn.textContent=logged?"Update today":"Save today";
+    }else{
+      titleEl.textContent=shortDate(selectedDate)+(logged?" \u00b7 logged":"");
+      saveBtn.textContent=(logged?"Update ":"Save ")+shortDate(selectedDate);
+    }
+  }
+  prevBtn.addEventListener("click",function(){selectDate(shiftDay(selectedDate,-1));});
+  nextBtn.addEventListener("click",function(){selectDate(shiftDay(selectedDate,1));});
+  todayBtn.addEventListener("click",function(){selectDate(todayIso());});
+  datePicker.addEventListener("change",function(){ if(datePicker.value) selectDate(datePicker.value); });
+
+  // ---- save ----
+  saveBtn.addEventListener("click",function(){
+    var entry={notes:notesEl.value.trim()};
+    METRICS.forEach(function(m){ entry[m.key]=parseInt(inputs[m.key].value,10); });
+    entry.backfilled = selectedDate===todayIso()?0:1;
+    data[selectedDate]=entry;
+    if(!persist(data)){ toast("Save failed \u2014 storage blocked"); return; }
+    saveBtn.classList.add("saved"); saveBtn.textContent="Saved";
+    setTimeout(function(){ saveBtn.classList.remove("saved"); updateChrome(); },1100);
+    render();
+    toast(selectedDate===todayIso()?"Logged":"Backfilled "+shortDate(selectedDate));
+  });
+
+  // ---- toast ----
+  var toastEl=document.getElementById("toast"), toastTimer;
+  function toast(msg){
+    toastEl.textContent=msg; toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){toastEl.classList.remove("show");},2200);
+  }
+
+  // ---- chart ----
+  function rollingAvg(keys,metric,win){
+    return keys.map(function(k,i){
+      var s=0,c=0;
+      for(var j=Math.max(0,i-win+1);j<=i;j++){
+        var v=data[keys[j]][metric];
+        if(v!=null){s+=v;c++;}
+      }
+      return c?s/c:null;
+    });
+  }
+  function pointsOf(values,W,yFn){
+    var pts=[];
+    for(var i=0;i<values.length;i++){
+      if(values[i]==null) continue;
+      var x=values.length===1?W/2:(i/(values.length-1))*W;
+      pts.push([x,yFn(values[i])]);
+    }
+    return pts;
+  }
+  function smoothPath(pts){
+    if(!pts.length) return "";
+    var d="M"+pts[0][0].toFixed(1)+","+pts[0][1].toFixed(1);
+    for(var k=1;k<pts.length;k++){
+      var mx=(pts[k-1][0]+pts[k][0])/2;
+      d+=" Q"+pts[k-1][0].toFixed(1)+","+pts[k-1][1].toFixed(1)+" "+mx.toFixed(1)+","+((pts[k-1][1]+pts[k][1])/2).toFixed(1);
+      d+=" T"+pts[k][0].toFixed(1)+","+pts[k][1].toFixed(1);
+    }
+    return d;
+  }
+  function buildCurve(){
+    var host=document.getElementById("curve");
+    var keys=Object.keys(data).sort();
+    if(keys.length<2){
+      host.innerHTML='<div class="empty"><b>Not enough readings</b>Log two or more days and the line begins. The point is to watch for a wave \u2014 or find out there isn\'t one.</div>';
+      return;
+    }
+    var recent=keys.slice(-45), W=520, H=158, padY=16;
+    function y(v){ return padY+(10-v)/9*(H-padY*2); }
+    var grid="";
+    [2.5,5,7.5].forEach(function(g){
+      grid+='<line x1="0" y1="'+y(g).toFixed(1)+'" x2="'+W+'" y2="'+y(g).toFixed(1)+'" stroke="#212942" stroke-width="1"/>';
+    });
+    var rawPts=pointsOf(recent.map(function(k){return data[k].energy;}),W,y);
+    var avgPts=pointsOf(rollingAvg(recent,"energy",7),W,y);
+    var moodPts=pointsOf(recent.map(function(k){return data[k].mood;}),W,y);
+    var avgPath=smoothPath(avgPts), area="";
+    if(avgPts.length>1){
+      area=avgPath+" L"+avgPts[avgPts.length-1][0].toFixed(1)+","+H+" L"+avgPts[0][0].toFixed(1)+","+H+" Z";
+    }
+    var last=avgPts.length?avgPts[avgPts.length-1]:null;
+    host.innerHTML=
+      '<svg class="chart" viewBox="0 0 '+W+' '+(H+20)+'" preserveAspectRatio="none">'+
+        '<defs><linearGradient id="ef" x1="0" y1="0" x2="0" y2="1">'+
+          '<stop offset="0%" stop-color="#E8A33D" stop-opacity=".20"/>'+
+          '<stop offset="100%" stop-color="#E8A33D" stop-opacity="0"/>'+
+        '</linearGradient></defs>'+
+        grid+
+        (area?'<path d="'+area+'" fill="url(#ef)"/>':'')+
+        '<path d="'+smoothPath(moodPts)+'" fill="none" stroke="#58B0A6" stroke-width="1.6" opacity=".55" stroke-linecap="round" stroke-linejoin="round"/>'+
+        '<path d="'+smoothPath(rawPts)+'" fill="none" stroke="#E8A33D" stroke-width="1" opacity=".24" stroke-linecap="round" stroke-linejoin="round"/>'+
+        '<path d="'+avgPath+'" fill="none" stroke="#E8A33D" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'+
+        (last?'<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="3.6" fill="#E8A33D" stroke="#101526" stroke-width="2"/>':'')+
+        '<text x="0" y="'+(H+16)+'" fill="#6C6E76" font-size="10.5" font-family="Georgia,serif">'+shortDate(recent[0])+'</text>'+
+        '<text x="'+W+'" y="'+(H+16)+'" fill="#6C6E76" font-size="10.5" font-family="Georgia,serif" text-anchor="end">'+shortDate(recent[recent.length-1])+'</text>'+
+      '</svg>';
+  }
+
+  // ---- ledger ----
+  function buildList(){
+    var host=document.getElementById("loglist");
+    var keys=Object.keys(data).sort().reverse().slice(0,14);
+    if(!keys.length){
+      host.innerHTML='<div class="empty"><b>No entries</b>Your first reading starts the record.</div>';
+      return;
+    }
+    var h='<table class="ledger"><thead><tr><th>Date</th>';
+    METRICS.forEach(function(m){ h+='<th style="color:'+m.css+'">'+m.label.slice(0,3)+'</th>'; });
+    h+='</tr></thead><tbody>';
+    keys.forEach(function(k){
+      var e=data[k];
+      h+='<tr><td class="d">'+shortDate(k)+(e.backfilled?'<s>&#9679;</s>':'')+'</td>';
+      METRICS.forEach(function(m){
+        var v=e[m.key];
+        h+='<td style="color:'+metricColor(m,v)+'">'+(v!=null?v:"\u2013")+'</td>';
+      });
+      h+='</tr>';
+    });
+    host.innerHTML=h+'</tbody></table>';
+  }
+
+  function buildMeta(){
+    var n=Object.keys(data).length, el=document.getElementById("meta");
+    if(n===0){ el.textContent="Kept on this device. Export now and then to keep a copy."; return; }
+    var last30=0;
+    for(var i=0;i<30;i++){ if(data[shiftDay(todayIso(),-i)]) last30++; }
+    el.textContent=n+(n===1?" day":" days")+" recorded \u00b7 "+last30+" of the last 30 covered";
+  }
+
+  // ---- CSV ----
+  function csvCell(s){ s=s==null?"":String(s); return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+  document.getElementById("export").addEventListener("click",function(){
+    var keys=Object.keys(data).sort();
+    if(!keys.length){ toast("Nothing to export"); return; }
+    var rows=[["date","energy","mood","happiness","sleep","food","notes","backfilled","daylight_hours"]];
+    keys.forEach(function(k){
+      var e=data[k];
+      rows.push([k,e.energy,e.mood,e.happiness,e.sleep,e.food,e.notes||"",e.backfilled?1:0,daylightHours(k).toFixed(2)]);
+    });
+    var csv=rows.map(function(r){return r.map(csvCell).join(",");}).join("\r\n");
+    var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+    var url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download="almanac-"+todayIso()+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+    toast("Exported");
+  });
+
+  document.getElementById("importBtn").addEventListener("click",function(){ document.getElementById("importFile").click(); });
+  document.getElementById("importFile").addEventListener("change",function(ev){
+    var file=ev.target.files[0]; if(!file) return;
+    var reader=new FileReader();
+    reader.onload=function(){
+      try{
+        var added=parseCsvMerge(reader.result);
+        persist(data); selectDate(selectedDate); render();
+        toast(added+(added===1?" day imported":" days imported"));
+      }catch(e){ toast("Couldn't read that file"); }
+      ev.target.value="";
+    };
+    reader.readAsText(file);
+  });
+  function parseCsvMerge(text){
+    var lines=text.split(/\r\n|\n|\r/).filter(function(l){return l.length;});
+    if(!lines.length) return 0;
+    var hasHeader=/date/i.test(lines[0])&&!/^\d{4}-\d{2}-\d{2}/.test(lines[0]), idx;
+    if(hasHeader){
+      idx={}; splitCsvLine(lines[0]).forEach(function(n,i){ idx[n.trim().toLowerCase()]=i; });
+    }else{
+      idx={date:0,energy:1,mood:2,happiness:3,sleep:4,notes:5,backfilled:6};
+    }
+    var start=hasHeader?1:0, count=0;
+    for(var i=start;i<lines.length;i++){
+      var c=splitCsvLine(lines[i]), d=(c[idx.date]||"").trim();
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+      data[d]={
+        energy:clampInt(c[idx.energy]), mood:clampInt(c[idx.mood]),
+        happiness:clampInt(c[idx.happiness]), sleep:clampInt(c[idx.sleep]),
+        food: idx.food!=null?clampInt(c[idx.food]):null,
+        notes:(c[idx.notes]!=null?c[idx.notes]:"").trim(),
+        backfilled: idx.backfilled!=null&&parseInt(c[idx.backfilled],10)?1:0
+      };
+      count++;
+    }
+    return count;
+  }
+  function clampInt(s){ var n=parseInt(s,10); return isNaN(n)?null:Math.max(1,Math.min(10,n)); }
+  function splitCsvLine(line){
+    var out=[],cur="",q=false;
+    for(var i=0;i<line.length;i++){
+      var c=line[i];
+      if(q){ if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+      else{ if(c==='"') q=true; else if(c===","){out.push(cur);cur="";} else cur+=c; }
+    }
+    out.push(cur); return out;
+  }
+
+  function render(){ buildCurve(); buildList(); buildMeta(); updateChrome(); }
+
+  selectDate(todayIso());
+  render();
+})();
+</script>
+</body>
+</html>
