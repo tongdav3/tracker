@@ -191,6 +191,32 @@
   #burnInput::-webkit-outer-spin-button,#burnInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   #burnInput:focus{outline:none;border-bottom-color:var(--parch-dim)}
   .burn-field em{font-style:italic;font-family:var(--serif);font-size:12px;color:var(--parch-faint)}
+  table.wk td.day{text-align:left;font-family:var(--sans);font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;font-weight:700;color:var(--parch-dim);white-space:nowrap}
+  table.wk td{text-align:center;font-size:13.5px}
+  table.wk th{text-align:center}
+  table.wk th:first-child{text-align:left}
+  table.wk tr.peak td.day{color:var(--parch)}
+  .eta-list{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+  .eta-row{display:flex;align-items:center;gap:9px;font-family:var(--serif);font-size:12.5px;color:var(--parch-dim)}
+  .eta-row b{font-weight:400;color:var(--parch);font-variant-numeric:tabular-nums;min-width:3.6ch;text-align:right}
+  .eta-bar{height:3px;border-radius:2px;flex:0 0 auto}
+  .update-bar{
+    position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 22px);
+    transform:translateX(-50%) translateY(16px);
+    display:none;align-items:center;gap:14px;
+    background:var(--parch);color:var(--ink);
+    padding:10px 12px 10px 18px;border-radius:var(--r);
+    font-family:var(--sans);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;
+    box-shadow:0 10px 30px -8px rgba(0,0,0,.8);z-index:70;opacity:0;transition:opacity .25s,transform .25s;
+  }
+  .update-bar.show{display:flex;opacity:1;transform:translateX(-50%) translateY(0)}
+  .update-bar button{
+    background:var(--ink);color:var(--parch);border:none;border-radius:var(--r);
+    padding:8px 14px;font-family:inherit;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;font-weight:800;cursor:pointer;
+  }
+  .offline-note{color:var(--parch-faint);font-style:italic}
   .save-dock{
     position:sticky;bottom:0;z-index:20;
     padding-bottom:calc(env(safe-area-inset-bottom) + 8px);
@@ -343,6 +369,11 @@
   </section>
 
   <section>
+    <div class="sec-head"><h2>By weekday</h2><span class="hair"></span></div>
+    <div id="weekday"></div>
+  </section>
+
+  <section>
     <div class="sec-head"><h2>Coverage</h2><span class="hair"></span></div>
     <div id="calendar"></div>
   </section>
@@ -408,6 +439,10 @@
   </section>
   </div>
 </aside>
+<div class="update-bar" id="updateBar">
+  <span>New version available</span>
+  <button id="updateGo">Reload</button>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 (function () {
@@ -685,7 +720,8 @@
   }
 
   if(typeof window !== "undefined"){
-    window.addEventListener("online", function(){ syncWeather(); });
+    window.addEventListener("online", function(){ syncWeather(); buildMeta(); });
+    window.addEventListener("offline", function(){ wxState="offline"; paintWxStatus(); buildMeta(); });
   }
 
   // ---- sun dome ----
@@ -1187,6 +1223,95 @@
       '. Near 0 means unrelated; \u00b11 means they move in lockstep. Association only \u2014 not cause.</div>';
   }
 
+  // ---- weekday breakdown ----
+  // Weekday is a category, not a quantity: an r against a 0-6 index would just reflect
+  // where the week is cut. Group means plus eta-squared (share of variance explained by
+  // weekday) are the correct pair for categorical against continuous.
+  var DAY_NAMES=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  function weekdayOf(iso){
+    var p=iso.split("-");
+    return new Date(p[0],p[1]-1,p[2]).getDay();
+  }
+  function weekdayStats(metric){
+    var groups=[[],[],[],[],[],[],[]], all=[];
+    Object.keys(data).forEach(function(k){
+      var v=data[k][metric.key];
+      if(v==null||isNaN(v)) return;
+      groups[weekdayOf(k)].push(v);
+      all.push(v);
+    });
+    if(all.length<14) return null;
+    var grand=all.reduce(function(a,b){return a+b;},0)/all.length;
+    var means=groups.map(function(g){
+      return g.length ? g.reduce(function(a,b){return a+b;},0)/g.length : null;
+    });
+    // eta-squared = between-group variation / total variation
+    var ssBetween=0, ssTotal=0;
+    groups.forEach(function(g,i){
+      if(!g.length) return;
+      ssBetween += g.length*Math.pow(means[i]-grand,2);
+    });
+    all.forEach(function(v){ ssTotal += Math.pow(v-grand,2); });
+    var eta = ssTotal>0 ? ssBetween/ssTotal : 0;
+    var filled=groups.filter(function(g){return g.length>0;}).length;
+    return { groups:groups, means:means, grand:grand, eta:eta, n:all.length, filled:filled };
+  }
+
+  function buildWeekday(){
+    var host=document.getElementById("weekday");
+    if(!host) return;
+    var mets=ACTIVE();
+    var stats=mets.map(function(m){ return { m:m, s:weekdayStats(m) }; }).filter(function(x){ return x.s; });
+    if(!stats.length){
+      var have=Object.keys(data).length;
+      host.innerHTML='<div class="empty"><b>Not enough days</b>Weekday patterns need at least fourteen readings before the averages mean much. '+
+                     have+' so far.</div>';
+      return;
+    }
+    var h='<table class="tbl wk"><thead><tr><th>Day</th>';
+    stats.forEach(function(x){ h+='<th style="color:'+x.m.hex+'">'+x.m.abbr+'</th>'; });
+    h+='<th>n</th></tr></thead><tbody>';
+
+    // mark the strongest weekday for the anchor metric so the eye lands somewhere
+    var anchor=corrAnchor();
+    var anchorStat=null;
+    stats.forEach(function(x){ if(anchor && x.m.key===anchor.key) anchorStat=x.s; });
+    var peakDay=-1;
+    if(anchorStat){
+      var best=-Infinity;
+      anchorStat.means.forEach(function(v,i){ if(v!=null && v>best){ best=v; peakDay=i; } });
+    }
+
+    for(var d=0;d<7;d++){
+      var cls = d===peakDay ? ' class="peak"' : '';
+      h+='<tr'+cls+'><td class="day">'+DAY_NAMES[d]+'</td>';
+      stats.forEach(function(x){
+        var v=x.s.means[d];
+        h+='<td style="color:'+metricColor(x.m,v)+'">'+
+           (v==null?"\u2013":(x.m.key==="food"?Math.round(v):v.toFixed(1)))+'</td>';
+      });
+      var cnt = stats[0].s.groups[d].length;
+      h+='<td style="color:var(--parch-faint);font-size:12px">'+cnt+'</td></tr>';
+    }
+    h+='</tbody></table>';
+
+    // eta-squared per metric, strongest first
+    var etas=stats.map(function(x){ return {label:x.m.label,hex:x.m.hex,eta:x.s.eta,filled:x.s.filled}; })
+                  .sort(function(a,b){ return b.eta-a.eta; });
+    var list='<div class="eta-list">';
+    etas.forEach(function(e){
+      list+='<div class="eta-row"><span class="eta-bar" style="width:'+
+            Math.max(2,e.eta*90).toFixed(0)+'px;background:'+e.hex+'"></span>'+
+            '<b>'+(e.eta*100).toFixed(0)+'%</b> of '+e.label.toLowerCase()+' variation falls along weekday</div>';
+    });
+    list+='</div>';
+
+    var thin = stats[0].s.filled<7 ? " Some weekdays have no readings yet." : "";
+    host.innerHTML = h + list +
+      '<div class="chart-note">Averages per weekday across every reading. The percentage is eta-squared \u2014 '+
+      'how much of each metric\u2019s spread is explained by which day it is. Small values are the normal case.'+thin+'</div>';
+  }
+
   // ---- coverage calendar ----
   var CAL_DAYS = 60;
   function buildCalendar(){
@@ -1265,7 +1390,13 @@
         if(since>=30) nudge='<span class="nudge">Last backup '+since+' days ago \u2014 worth exporting.</span>';
       }
     }
-    el.innerHTML=base+nudge;
+    var off="";
+    if(typeof navigator!=="undefined" && navigator.onLine===false){
+      off='<span class="offline-note"> \u00b7 offline \u2014 logging works, weather will catch up</span>';
+    }else if(storagePersisted===true){
+      off='<span class="offline-note"> \u00b7 stored offline</span>';
+    }
+    el.innerHTML=base+off+nudge;
   }
 
   // ---- CSV ----
@@ -1384,7 +1515,7 @@
     out.push(cur); return out;
   }
 
-  function render(){ buildCurve(); buildStats(); buildCorr(); buildCalendar(); buildList(); buildMeta(); updateChrome(); }
+  function render(){ buildCurve(); buildStats(); buildCorr(); buildWeekday(); buildCalendar(); buildList(); buildMeta(); updateChrome(); }
 
   // ---- appearance ----
   function applyPrefs(){
@@ -1548,6 +1679,61 @@
       paintNet();
     });
   })();
+
+  // ---- offline support ----
+  // The service worker precaches the app shell, so opening with no connection
+  // works normally. Weather is the only thing that needs the network, and it
+  // fails soft. Requires HTTPS -- this does nothing on a file:// copy.
+  (function(){
+    if(!("serviceWorker" in navigator)) return;
+    if(location.protocol === "file:") return;
+
+    var bar=document.getElementById("updateBar");
+    var go=document.getElementById("updateGo");
+    var reloading=false;
+    function showUpdate(){ if(bar) bar.classList.add("show"); }
+    if(go){
+      go.addEventListener("click",function(){
+        if(reloading) return;
+        reloading=true;
+        if(navigator.serviceWorker.controller){
+          navigator.serviceWorker.controller.postMessage({type:"skip-waiting"});
+        }
+        location.reload();
+      });
+    }
+
+    navigator.serviceWorker.addEventListener("message",function(e){
+      if(e.data && e.data.type==="update-ready") showUpdate();
+    });
+
+    window.addEventListener("load",function(){
+      navigator.serviceWorker.register("sw.js").then(function(reg){
+        // a worker already waiting means an update landed on a previous visit
+        if(reg.waiting && navigator.serviceWorker.controller) showUpdate();
+        reg.addEventListener("updatefound",function(){
+          var sw=reg.installing;
+          if(!sw) return;
+          sw.addEventListener("statechange",function(){
+            if(sw.state==="installed" && navigator.serviceWorker.controller) showUpdate();
+          });
+        });
+      }).catch(function(){});
+    });
+
+    // ask the browser not to evict this origin's storage under pressure
+    if(navigator.storage && navigator.storage.persist){
+      navigator.storage.persisted().then(function(already){
+        if(!already) return navigator.storage.persist();
+      }).then(function(granted){
+        if(granted) markStorageState(true);
+      }).catch(function(){});
+      navigator.storage.persisted().then(markStorageState).catch(function(){});
+    }
+  })();
+
+  var storagePersisted=null;
+  function markStorageState(v){ storagePersisted=v; buildMeta(); }
 
   // ---- settings drawer ----
   (function(){
